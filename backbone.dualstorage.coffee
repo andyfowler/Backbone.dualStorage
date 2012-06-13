@@ -205,7 +205,8 @@ dualsync = (method, model, options) ->
         console.log "can't clear", options.storeName, "require sync dirty data first"
         success localsync(method, model, options)
       else
-        options.success = (resp, status, xhr) ->
+        remoteOptions = _(options).clone()
+        remoteOptions.success = (resp, status, xhr) ->
           console.log 'got remote', resp, 'putting into', options.storeName
           resp = parseRemoteResponse(model, resp)
           
@@ -218,13 +219,24 @@ dualsync = (method, model, options) ->
           else
             localsync('create', resp, options)
           
-          success(resp, status, xhr)
+          success(resp, status, xhr) # ideally this would only be called if we knew that it was different from localStorage, instead of reset()-ing
         
-        options.error = (resp) ->
-          console.log 'getting local from', options.storeName
-          success localsync(method, model, options)
-
-        onlineSync(method, model, options)
+        remoteOptions.error = (resp) ->
+          console.log('remote sync failed, doing nothing')
+          
+        # after localsync loads, check to see if we should still remotesync
+        options.ignoreCallbacks = false
+        options.success = (resp) ->
+          # first fire the success callback which will populate the model
+          success(resp)
+          
+          # now that the collection is populated from localStorage, check if we should remote
+          if _.isUndefined(model.shouldRemoteSync) or (_.isFunction(model.shouldRemoteSync) and model.shouldRemoteSync())
+            onlineSync(method, model, remoteOptions)  
+          
+        
+        console.log 'getting local from', options.storeName
+        localsync(method, model, options)
 
     when 'create'
       options.success = (resp, status, xhr) ->
