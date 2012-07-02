@@ -71,7 +71,6 @@
       var dirtyRecords;
       dirtyRecords = this.recordsOn(this.name + '_dirty');
       if (!_.include(dirtyRecords, model.id.toString())) {
-        console.log('dirtying', model);
         dirtyRecords.push(model.id);
         localStorage.setItem(this.name + '_dirty', dirtyRecords.join(','));
       }
@@ -83,7 +82,6 @@
       store = "" + this.name + "_" + from;
       dirtyRecords = this.recordsOn(store);
       if (_.include(dirtyRecords, model.id.toString())) {
-        console.log('cleaning', model.id);
         localStorage.setItem(store, _.without(dirtyRecords, model.id.toString()).join(','));
       }
       return model;
@@ -100,7 +98,6 @@
     };
 
     Store.prototype.create = function(model) {
-      console.log('creating', model, 'in', this.name);
       if (!_.isObject(model)) {
         return model;
       }
@@ -117,7 +114,6 @@
     };
 
     Store.prototype.update = function(model) {
-      console.log('updating', model, 'in', this.name);
       localStorage.setItem(this.name + this.sep + model.id, JSON.stringify(model));
       if (!_.include(this.records, model.id.toString())) {
         this.records.push(model.id.toString());
@@ -142,13 +138,11 @@
     };
 
     Store.prototype.find = function(model) {
-      console.log('finding', model, 'in', this.name);
       return JSON.parse(localStorage.getItem(this.name + this.sep + model.id));
     };
 
     Store.prototype.findAll = function() {
       var id, _i, _len, _ref, _results;
-      console.log('findAlling');
       _ref = this.records;
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -159,7 +153,6 @@
     };
 
     Store.prototype.destroy = function(model) {
-      console.log('trying to destroy', model, 'in', this.name);
       localStorage.removeItem(this.name + this.sep + model.id);
       this.records = _.reject(this.records, function(record_id) {
         return record_id === model.id.toString();
@@ -251,7 +244,6 @@
 
   dualsync = function(method, model, options) {
     var error, local, originalModel, remoteOptions, success;
-    console.log('dualsync', method, model, options);
     options.storeName = result(model.collection, 'url') || result(model, 'url');
     if (result(model, 'remote') || result(model.collection, 'remote')) {
       return onlineSync(method, model, options);
@@ -267,28 +259,22 @@
     switch (method) {
       case 'read':
         if (localsync('hasDirtyOrDestroyed', model, options)) {
-          console.log("can't clear", options.storeName, "require sync dirty data first");
           return success(localsync(method, model, options));
         } else {
           remoteOptions = _(options).clone();
           remoteOptions.success = function(resp, status, xhr) {
             var i, _i, _len;
-            console.log('got remote', resp, 'putting into', options.storeName);
             resp = parseRemoteResponse(model, resp);
             localsync('clear', model, options);
             if (_.isArray(resp)) {
               for (_i = 0, _len = resp.length; _i < _len; _i++) {
                 i = resp[_i];
-                console.log('trying to store', i);
                 localsync('create', i, options);
               }
             } else {
               localsync('create', resp, options);
             }
             return success(resp, status, xhr);
-          };
-          remoteOptions.error = function(resp) {
-            return console.log('remote sync failed, doing nothing');
           };
           options.ignoreCallbacks = false;
           options.success = function(resp) {
@@ -297,7 +283,6 @@
               return onlineSync(method, model, remoteOptions);
             }
           };
-          console.log('getting local from', options.storeName);
           return localsync(method, model, options);
         }
         break;
