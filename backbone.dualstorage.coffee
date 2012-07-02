@@ -57,7 +57,6 @@ class window.Store
   dirty: (model) ->
     dirtyRecords = @recordsOn @name + '_dirty'
     if not _.include(dirtyRecords, model.id.toString())
-      console.log 'dirtying', model
       dirtyRecords.push model.id
       localStorage.setItem @name + '_dirty', dirtyRecords.join(',')
     model
@@ -66,7 +65,6 @@ class window.Store
     store = "#{@name}_#{from}"
     dirtyRecords = @recordsOn store
     if _.include dirtyRecords, model.id.toString()
-      console.log 'cleaning', model.id
       localStorage.setItem store, _.without(dirtyRecords, model.id.toString()).join(',')
     model
     
@@ -80,7 +78,6 @@ class window.Store
   # Add a model, giving it a (hopefully)-unique GUID, if it doesn't already
   # have an id of it's own.
   create: (model) ->
-    console.log 'creating', model, 'in', @name
     if not _.isObject(model) then return model
     if model.attributes? then model = model.attributes
     if not model.id then model.id = @generateId()
@@ -91,7 +88,6 @@ class window.Store
 
   # Update a model by replacing its copy in `this.data`.
   update: (model) ->
-    console.log 'updating', model, 'in', @name
     localStorage.setItem @name + @sep + model.id, JSON.stringify(model)
     if not _.include(@records, model.id.toString())
       @records.push model.id.toString()
@@ -109,18 +105,15 @@ class window.Store
 
   # Retrieve a model from `this.data` by id.
   find: (model) ->
-    console.log 'finding', model, 'in', @name
     JSON.parse localStorage.getItem(@name + @sep + model.id)
 
   # Return the array of all models currently in storage.
   findAll: ->
-    console.log 'findAlling'
     for id in @records
       JSON.parse localStorage.getItem(@name + @sep + id)
 
   # Delete a model from `this.data`, returning it.
   destroy: (model) ->
-    console.log 'trying to destroy', model, 'in', @name
     localStorage.removeItem @name + @sep + model.id
     @records = _.reject(@records, (record_id) ->
       record_id is model.id.toString()
@@ -181,8 +174,6 @@ parseRemoteResponse = (object, response) ->
 onlineSync = Backbone.sync
 
 dualsync = (method, model, options) ->
-  console.log 'dualsync', method, model, options
-  
   options.storeName = result(model.collection, 'url') || result(model, 'url')
   
   # execute only online sync
@@ -202,27 +193,24 @@ dualsync = (method, model, options) ->
   switch method
     when 'read'
       if localsync('hasDirtyOrDestroyed', model, options)
-        console.log "can't clear", options.storeName, "require sync dirty data first"
         success localsync(method, model, options)
       else
         remoteOptions = _(options).clone()
         remoteOptions.success = (resp, status, xhr) ->
-          console.log 'got remote', resp, 'putting into', options.storeName
           resp = parseRemoteResponse(model, resp)
           
           localsync('clear', model, options)
           
           if _.isArray resp
             for i in resp
-              console.log 'trying to store', i
               localsync('create', i, options)
           else
             localsync('create', resp, options)
           
           success(resp, status, xhr) # ideally this would only be called if we knew that it was different from localStorage, instead of reset()-ing
         
-        remoteOptions.error = (resp) ->
-          console.log('remote sync failed, doing nothing')
+        # remote sync failed, do nothing for now
+        # remoteOptions.error = (resp) ->
           
         # after localsync loads, check to see if we should still remotesync
         options.ignoreCallbacks = false
@@ -234,8 +222,6 @@ dualsync = (method, model, options) ->
           if _.isUndefined(model.shouldRemoteSync) or (_.isFunction(model.shouldRemoteSync) and model.shouldRemoteSync())
             onlineSync(method, model, remoteOptions)  
           
-        
-        console.log 'getting local from', options.storeName
         localsync(method, model, options)
 
     when 'create'
