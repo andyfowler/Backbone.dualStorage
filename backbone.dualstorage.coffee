@@ -213,7 +213,6 @@ dualsync = (method, model, options) ->
         # remoteOptions.error = (resp) ->
           
         # after localsync loads, check to see if we should still remotesync
-        options.ignoreCallbacks = false
         options.success = (resp) ->
           # first fire the success callback which will populate the model
           success(resp)
@@ -222,7 +221,8 @@ dualsync = (method, model, options) ->
           if _.isUndefined(model.shouldRemoteSync) or (_.isFunction(model.shouldRemoteSync) and model.shouldRemoteSync())
             onlineSync(method, model, remoteOptions)  
           
-        localsync(method, model, options)
+        optionsWithCallbacks = _(options).chain().clone().extend(ignoreCallbacks: false).value()
+        localsync(method, model, optionsWithCallbacks)
 
     when 'create'
       options.success = (resp, status, xhr) ->
