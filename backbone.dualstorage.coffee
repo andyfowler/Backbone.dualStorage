@@ -48,7 +48,15 @@ class window.Store
   
   # Save the current state of the **Store** to *localStorage*.
   save: ->
-    localStorage.setItem @name, @records.join(',')
+    @localStorageSet @name, @records.join(',')
+
+  # Wrapper to catch "Persistent storage maximum size reached" errors so they
+  # don't stop script execution
+  localStorageSet: (itemName, itemValue) ->
+    try
+      localStorage.setItem itemName, itemValue
+    catch error
+      console.log "error setting #{itemName} ", error.toString()
   
   recordsOn: (key) ->
     store = localStorage.getItem(key)
@@ -58,21 +66,21 @@ class window.Store
     dirtyRecords = @recordsOn @name + '_dirty'
     if not _.include(dirtyRecords, model.id.toString())
       dirtyRecords.push model.id
-      localStorage.setItem @name + '_dirty', dirtyRecords.join(',')
+      @localStorageSet @name + '_dirty', dirtyRecords.join(',')
     model
   
   clean: (model, from) ->
     store = "#{@name}_#{from}"
     dirtyRecords = @recordsOn store
     if _.include dirtyRecords, model.id.toString()
-      localStorage.setItem store, _.without(dirtyRecords, model.id.toString()).join(',')
+      @localStorageSet store, _.without(dirtyRecords, model.id.toString()).join(',')
     model
     
   destroyed: (model) ->
     destroyedRecords = @recordsOn @name + '_destroyed'
     if not _.include destroyedRecords, model.id.toString()
       destroyedRecords.push model.id
-      localStorage.setItem @name + '_destroyed', destroyedRecords.join(',')
+      @localStorageSet @name + '_destroyed', destroyedRecords.join(',')
     model
     
   # Add a model, giving it a (hopefully)-unique GUID, if it doesn't already
@@ -81,14 +89,14 @@ class window.Store
     if not _.isObject(model) then return model
     if model.attributes? then model = model.attributes
     if not model.id then model.id = @generateId()
-    localStorage.setItem @name + @sep + model.id, JSON.stringify(model)
+    @localStorageSet @name + @sep + model.id, JSON.stringify(model)
     @records.push model.id.toString()
     @save()
     model
 
   # Update a model by replacing its copy in `this.data`.
   update: (model) ->
-    localStorage.setItem @name + @sep + model.id, JSON.stringify(model)
+    @localStorageSet @name + @sep + model.id, JSON.stringify(model)
     if not _.include(@records, model.id.toString())
       @records.push model.id.toString()
     @save()
