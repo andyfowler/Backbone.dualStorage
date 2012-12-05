@@ -1,8 +1,5 @@
 (function() {
-  'use strict';
-
-  var S4, dualsync, localsync, onlineSync, parseRemoteResponse, result;
-
+  'use strict';  var S4, dualsync, localsync, onlineSync, parseRemoteResponse, result;
   Backbone.Collection.prototype.syncDirty = function() {
     var id, ids, model, store, _i, _len, _results;
     store = localStorage.getItem("" + this.url + "_dirty");
@@ -17,7 +14,6 @@
     }
     return _results;
   };
-
   Backbone.Collection.prototype.syncDestroyed = function() {
     var id, ids, model, store, _i, _len, _results;
     store = localStorage.getItem("" + this.url + "_destroyed");
@@ -33,71 +29,66 @@
     }
     return _results;
   };
-
   Backbone.Collection.prototype.syncDirtyAndDestroyed = function() {
     this.syncDirty();
     return this.syncDestroyed();
   };
-
   S4 = function() {
     return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
   };
-
   window.Store = (function() {
-
     Store.prototype.sep = '';
-
     function Store(name) {
       this.name = name;
       this.records = this.recordsOn(this.name);
     }
-
     Store.prototype.generateId = function() {
       return S4() + S4() + '-' + S4() + '-' + S4() + '-' + S4() + '-' + S4() + S4() + S4();
     };
-
     Store.prototype.save = function() {
-      return localStorage.setItem(this.name, this.records.join(','));
+      return this.localStorageSet(this.name, this.records.join(','));
     };
-
+    Store.prototype.localStorageSet = function(itemName, itemValue) {
+      try {
+        return localStorage.setItem(itemName, itemValue);
+      } catch (error) {
+        return console.log("error setting " + itemName + " ", error.toString());
+      }
+    };
     Store.prototype.recordsOn = function(key) {
       var store;
       store = localStorage.getItem(key);
       return (store && store.split(',')) || [];
     };
-
     Store.prototype.dirty = function(model) {
       var dirtyRecords;
       dirtyRecords = this.recordsOn(this.name + '_dirty');
       if (!_.include(dirtyRecords, model.id.toString())) {
         console.log('dirtying', model);
         dirtyRecords.push(model.id);
-        localStorage.setItem(this.name + '_dirty', dirtyRecords.join(','));
+        this.localStorageSet(this.name + '_dirty', dirtyRecords.join(','));
       }
       return model;
     };
-
     Store.prototype.clean = function(model, from) {
       var dirtyRecords, store;
       store = "" + this.name + "_" + from;
       dirtyRecords = this.recordsOn(store);
       if (_.include(dirtyRecords, model.id.toString())) {
         console.log('cleaning', model.id);
-        localStorage.setItem(store, _.without(dirtyRecords, model.id.toString()).join(','));
+        this.localStorageSet(store, _.without(dirtyRecords, model.id.toString()).join(','));
       }
       return model;
     };
-
     Store.prototype.destroyed = function(model) {
       var destroyedRecords;
       destroyedRecords = this.recordsOn(this.name + '_destroyed');
       if (!_.include(destroyedRecords, model.id.toString())) {
         destroyedRecords.push(model.id);
-        localStorage.setItem(this.name + '_destroyed', destroyedRecords.join(','));
+        this.localStorageSet(this.name + '_destroyed', destroyedRecords.join(','));
       }
       return model;
     };
-
     Store.prototype.create = function(model) {
       console.log('creating', model, 'in', this.name);
       if (!_.isObject(model)) {
@@ -109,22 +100,20 @@
       if (!model.id) {
         model.id = this.generateId();
       }
-      localStorage.setItem(this.name + this.sep + model.id, JSON.stringify(model));
+      this.localStorageSet(this.name + this.sep + model.id, JSON.stringify(model));
       this.records.push(model.id.toString());
       this.save();
       return model;
     };
-
     Store.prototype.update = function(model) {
       console.log('updating', model, 'in', this.name);
-      localStorage.setItem(this.name + this.sep + model.id, JSON.stringify(model));
+      this.localStorageSet(this.name + this.sep + model.id, JSON.stringify(model));
       if (!_.include(this.records, model.id.toString())) {
         this.records.push(model.id.toString());
       }
       this.save();
       return model;
     };
-
     Store.prototype.clear = function() {
       var id, _i, _len, _ref;
       _ref = this.records;
@@ -135,16 +124,13 @@
       this.records = [];
       return this.save();
     };
-
     Store.prototype.hasDirtyOrDestroyed = function() {
       return !_.isEmpty(localStorage.getItem(this.name + '_dirty')) || !_.isEmpty(localStorage.getItem(this.name + '_destroyed'));
     };
-
     Store.prototype.find = function(model) {
       console.log('finding', model, 'in', this.name);
       return JSON.parse(localStorage.getItem(this.name + this.sep + model.id));
     };
-
     Store.prototype.findAll = function() {
       var id, _i, _len, _ref, _results;
       console.log('findAlling');
@@ -156,7 +142,6 @@
       }
       return _results;
     };
-
     Store.prototype.destroy = function(model) {
       console.log('trying to destroy', model, 'in', this.name);
       localStorage.removeItem(this.name + this.sep + model.id);
@@ -166,11 +151,8 @@
       this.save();
       return model;
     };
-
     return Store;
-
   })();
-
   localsync = function(method, model, options) {
     var response, store;
     store = new Store(options.storeName);
@@ -223,7 +205,6 @@
     }
     return response;
   };
-
   result = function(object, property) {
     var value;
     if (!object) {
@@ -236,7 +217,6 @@
       return value;
     }
   };
-
   parseRemoteResponse = function(object, response) {
     if (!(object && object.parseBeforeLocalSave)) {
       return response;
@@ -245,9 +225,7 @@
       return object.parseBeforeLocalSave(response);
     }
   };
-
   onlineSync = Backbone.sync;
-
   dualsync = function(method, model, options) {
     var error, local, originalModel, success;
     console.log('dualsync', method, model, options);
@@ -345,7 +323,5 @@
         }
     }
   };
-
   Backbone.sync = dualsync;
-
 }).call(this);
