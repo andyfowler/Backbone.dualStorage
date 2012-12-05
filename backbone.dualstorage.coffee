@@ -56,7 +56,7 @@ class window.Store
     try
       localStorage.setItem itemName, itemValue
     catch error
-      console.log "error setting #{itemName} ", error.toString()
+      # console.log "error setting #{itemName} ", error.toString()
   
   recordsOn: (key) ->
     store = localStorage.getItem(key)

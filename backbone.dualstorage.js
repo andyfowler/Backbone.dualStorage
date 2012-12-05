@@ -52,7 +52,7 @@
       try {
         return localStorage.setItem(itemName, itemValue);
       } catch (error) {
-        return console.log("error setting " + itemName + " ", error.toString());
+
       }
     };
     Store.prototype.recordsOn = function(key) {
