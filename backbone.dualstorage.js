@@ -115,7 +115,7 @@
       _ref = this.records;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         id = _ref[_i];
-        localStorage.removeItem(this.name + this.sep + id);
+        localStorage.setItem(this.name + this.sep + id, null);
       }
       this.records = [];
       return this.save();
@@ -137,7 +137,7 @@
       return _results;
     };
     Store.prototype.destroy = function(model) {
-      localStorage.removeItem(this.name + this.sep + model.id);
+      localStorage.setItem(this.name + this.sep + model.id, null);
       this.records = _.reject(this.records, function(record_id) {
         return record_id === model.id.toString();
       });

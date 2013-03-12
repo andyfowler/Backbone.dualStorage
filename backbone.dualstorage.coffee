@@ -104,7 +104,7 @@ class window.Store
   
   clear: ->
     for id in @records
-      localStorage.removeItem @name + @sep + id
+      localStorage.setItem @name + @sep + id null
     @records = []
     @save()
   
@@ -122,7 +122,7 @@ class window.Store
 
   # Delete a model from `this.data`, returning it.
   destroy: (model) ->
-    localStorage.removeItem @name + @sep + model.id
+    localStorage.setItem @name + @sep + model.id null
     @records = _.reject(@records, (record_id) ->
       record_id is model.id.toString()
     )
